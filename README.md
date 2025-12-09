@@ -1,1 +1,11 @@
 # setup-hetzner-website
+
+A script to set up a fresh Debian/Ubuntu machine on Hetzner for hosting websites.
+
+## Usage
+
+Run on a fresh Debian/Ubuntu server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shipurjan/setup-hetzner-website/refs/heads/master/init.sh | bash
+```
