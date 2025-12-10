@@ -135,7 +135,8 @@ apt install -y \
   whois \
   tree \
   vim \
-  nano
+  nano \
+  jq
 
 # Create fd symlink (Debian names it fdfind)
 mkdir -p /root/.local/bin
@@ -367,6 +368,58 @@ rm -f /root/init.sh /root/setup-config.sh /root/default.conf
 # Restore interactive frontend
 unset DEBIAN_FRONTEND
 
+# Start Docker Compose stack
+echo "=== Starting Docker containers ==="
+cd "/root/$DOMAIN/docker"
+docker compose up -d
+
+# Wait for containers to be healthy (with timeout)
+echo "=== Waiting for containers to be healthy ==="
+TIMEOUT=60
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+  UNHEALTHY=$(docker compose ps --format json | jq -r 'select(.Health != "healthy" and .Health != "") | .Name' 2>/dev/null | wc -l)
+  if [ "$UNHEALTHY" -eq 0 ]; then
+    echo "All containers are healthy"
+    break
+  fi
+  echo "Waiting for $UNHEALTHY container(s) to become healthy..."
+  sleep 2
+  ELAPSED=$((ELAPSED + 2))
+done
+
+if [ $ELAPSED -ge $TIMEOUT ]; then
+  echo "Warning: Some containers may not be healthy. Check with lazydocker."
+fi
+
+cd /root
+
 echo "=== Setup complete ==="
 echo "=== Launching tmux session: $DOMAIN ==="
-( exec </dev/tty; exec <&1; exec tmux new-session -s "$DOMAIN" )
+
+# Create tmux session with proper terminal handling
+(
+  exec </dev/tty
+  exec <&1
+
+  # Check if session already exists
+  if tmux has-session -t "$DOMAIN" 2>/dev/null; then
+    echo "Tmux session '$DOMAIN' already exists. Attaching..."
+    exec tmux attach-session -t "$DOMAIN"
+  fi
+
+  # Create detached session in project directory
+  tmux new-session -d -s "$DOMAIN" -c "/root/$DOMAIN"
+
+  # Split window vertically (left 70%, right 30%)
+  tmux split-window -h -t "$DOMAIN:0" -p 30
+
+  # Select left pane (pane 0) - main console
+  tmux select-pane -t "$DOMAIN:0.0"
+
+  # Send lazydocker command to right pane (pane 1)
+  tmux send-keys -t "$DOMAIN:0.1" 'lazydocker' C-m
+
+  # Attach to session
+  exec tmux attach-session -t "$DOMAIN"
+)
