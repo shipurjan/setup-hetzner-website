@@ -272,6 +272,79 @@ LOGS_USERNAME='$ADMIN_LOGIN'
 LOGS_PASSWORD_HASH='$ADMIN_PASSWORD_HASH'
 EOF
 
+echo "=== Configuring fail2ban for honeypot protection ==="
+
+# Create Caddy log directory
+mkdir -p /var/log/caddy
+
+# Create fail2ban filter for Caddy honeypots
+cat >/etc/fail2ban/filter.d/caddy-honeypot.conf <<'EOF'
+[Definition]
+# Caddy honeypot filter for JSON logs
+# Matches any request that triggers the X-Honeypot header
+
+failregex = "remote_ip":"<HOST>".*?"X-Honeypot":\["trapped"\]
+            "client_ip":"<HOST>".*?"X-Honeypot":\["trapped"\]
+
+ignoreregex =
+EOF
+
+# Create fail2ban action for Docker iptables
+cat >/etc/fail2ban/action.d/docker-iptables.conf <<'EOF'
+# Fail2Ban action for Docker containers
+# Uses DOCKER-USER chain which Docker respects
+
+[Definition]
+
+actionstart = iptables -N f2b-<name>
+              iptables -A DOCKER-USER -j f2b-<name>
+              iptables -A f2b-<name> -j RETURN
+
+actionstop = iptables -D DOCKER-USER -j f2b-<name>
+             iptables -F f2b-<name>
+             iptables -X f2b-<name>
+
+actioncheck = iptables -n -L DOCKER-USER | grep -q 'f2b-<name>[ \t]'
+
+actionban = iptables -I f2b-<name> 1 -s <ip> -j REJECT --reject-with icmp-port-unreachable
+
+actionunban = iptables -D f2b-<name> -s <ip> -j REJECT --reject-with icmp-port-unreachable
+
+[Init]
+name = default
+EOF
+
+# Create fail2ban jail configuration
+cat >/etc/fail2ban/jail.local <<'EOF'
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 5
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+
+[caddy-honeypot]
+enabled = true
+port = http,https
+filter = caddy-honeypot
+action = docker-iptables[name=caddy-honeypot]
+logpath = /var/log/caddy/access.log
+maxretry = 1
+bantime = 86400
+findtime = 600
+EOF
+
+# Restart fail2ban to apply configuration
+systemctl restart fail2ban
+systemctl enable fail2ban
+
+echo "fail2ban configured with honeypot protection"
+
 # Initialize fresh git repo with initial commit
 cd "/root/$DOMAIN"
 git config --global core.pager ''
