@@ -8,46 +8,87 @@ POWERLEVEL10K_COMMIT="36f3045d69d1ba402db09d09eb12b42eebe0fa3b"
 LAZYDOCKER_COMMIT="78edbf3d2e3bb79440bdb88f4382cab9f81c43e4"
 TPM_COMMIT="99469c4a9b1ccf77fade25842dc7bafbc8ce9946"
 
-echo "=== Choose your preferred editor ==="
-echo "1) vim"
-echo "2) nano"
-read -p "Enter choice [1-2]: " editor_choice < /dev/tty
+# Default config URL
+DEFAULT_CONFIG_URL="https://raw.githubusercontent.com/shipurjan/vps-webhost-init/refs/heads/master/default.conf"
 
-case $editor_choice in
-1) EDITOR="vim" ;;
-2) EDITOR="nano" ;;
-*)
-  echo "Invalid choice"
-  exit 1
-  ;;
-esac
+# Parse command line argument
+USER_CONFIG_SOURCE="$1"
 
-echo "=== Installing $EDITOR ==="
+# Install curl first (needed for downloading config)
+echo "=== Installing curl ==="
 apt update
-apt install -y $EDITOR
+apt install -y curl
 
+# Determine editor preference and install (only if no config provided)
+if [ -z "$USER_CONFIG_SOURCE" ]; then
+  echo "=== Choose your preferred editor ==="
+  echo "1) vim"
+  echo "2) nano"
+  read -p "Enter choice [1-2]: " editor_choice < /dev/tty
+
+  case $editor_choice in
+  1) EDITOR="vim" ;;
+  2) EDITOR="nano" ;;
+  *)
+    echo "Invalid choice"
+    exit 1
+    ;;
+  esac
+
+  echo "=== Installing $EDITOR ==="
+  apt install -y $EDITOR
+else
+  # Default to vim if config is provided
+  EDITOR="vim"
+fi
+
+# Load default configuration
 CONFIG_FILE="/root/setup-config.sh"
-cat >"$CONFIG_FILE" <<'EOF'
-# Fill in your configuration details
-# Save and close when done
+echo "=== Loading default configuration ==="
+curl -fsSL "$DEFAULT_CONFIG_URL" -o "$CONFIG_FILE"
 
-# Your domain name (e.g. example.com)
-DOMAIN="example.com"
+# If user provided a config source, merge it
+if [ -n "$USER_CONFIG_SOURCE" ]; then
+  echo "=== Loading user configuration ==="
+  USER_CONFIG_FILE="/root/user-config.sh"
 
-# Your email address (used for SSL certificates, notifications, and git commits)
-EMAIL="you@example.com"
+  # Check if it's a URL or file path
+  if [[ "$USER_CONFIG_SOURCE" =~ ^https?:// ]]; then
+    # It's a URL, fetch it
+    echo "Fetching configuration from URL: $USER_CONFIG_SOURCE"
+    curl -fsSL "$USER_CONFIG_SOURCE" -o "$USER_CONFIG_FILE"
+  elif [ -f "$USER_CONFIG_SOURCE" ]; then
+    # It's a file, copy it
+    echo "Reading configuration from file: $USER_CONFIG_SOURCE"
+    cp "$USER_CONFIG_SOURCE" "$USER_CONFIG_FILE"
+  else
+    echo "Error: Config source not found: $USER_CONFIG_SOURCE"
+    exit 1
+  fi
 
-# Your full name (used for git commits)
-FULL_NAME="Your Name"
+  # Source both files to merge (user config overwrites defaults)
+  source "$CONFIG_FILE"
+  source "$USER_CONFIG_FILE"
 
-# Admin panel login credentials (will be encrypted)
-ADMIN_LOGIN="admin"
-ADMIN_PASSWORD="changeme"
+  # Write merged config back
+  cat >"$CONFIG_FILE" <<EOF
+# Merged configuration (defaults + user overrides)
+
+DOMAIN="$DOMAIN"
+EMAIL="$EMAIL"
+FULL_NAME="$FULL_NAME"
+ADMIN_LOGIN="$ADMIN_LOGIN"
+ADMIN_PASSWORD="$ADMIN_PASSWORD"
 EOF
 
-echo "=== Please fill in your configuration ==="
-$EDITOR "$CONFIG_FILE" < /dev/tty
+  rm -f "$USER_CONFIG_FILE"
+else
+  # No config provided, let user edit the default
+  echo "=== Please fill in your configuration ==="
+  $EDITOR "$CONFIG_FILE" < /dev/tty
+fi
 
+# Source the final configuration
 source "$CONFIG_FILE"
 
 echo "=== Configuration loaded ==="
@@ -55,6 +96,7 @@ echo "Domain: $DOMAIN"
 echo "Email: $EMAIL"
 
 echo "=== Updating system ==="
+apt update
 apt upgrade -y
 
 echo "=== Installing essential packages ==="
@@ -74,7 +116,9 @@ apt install -y \
   ripgrep \
   fd-find \
   whois \
-  tree
+  tree \
+  vim \
+  nano
 
 # Create fd symlink (Debian names it fdfind)
 mkdir -p /root/.local/bin
