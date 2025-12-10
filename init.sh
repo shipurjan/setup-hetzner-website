@@ -171,10 +171,25 @@ EOF
 # Install tmux plugins
 /root/.tmux/plugins/tpm/bin/install_plugins
 
-# Create project directory
-mkdir -p "/root/$DOMAIN"
+# Clone repo and scaffold project from template
+git clone --depth=1 https://github.com/shipurjan/vps-webhost-init.git /tmp/vps-webhost-init
+cp -r /tmp/vps-webhost-init/template "/root/$DOMAIN"
+
+# Replace placeholders with config values
+find "/root/$DOMAIN" -type f -exec sed -i \
+  -e "s|{{%INIT_TEMPLATE%:DOMAIN}}|$DOMAIN|g" \
+  -e "s|{{%INIT_TEMPLATE%:EMAIL}}|$EMAIL|g" \
+  -e "s|{{%INIT_TEMPLATE%:ADMIN_LOGIN}}|$ADMIN_LOGIN|g" \
+  -e "s|{{%INIT_TEMPLATE%:ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
+  {} \;
+
+# Initialize fresh git repo
+cd "/root/$DOMAIN"
+git init
+cd /root
 
 # Cleanup
+rm -rf /tmp/vps-webhost-init
 rm -f /root/init.sh /root/setup-config.sh
 
 echo "=== Setup complete ==="
