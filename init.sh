@@ -20,6 +20,14 @@ USER_CONFIG_SOURCE="$1"
 # Install curl first (needed for downloading config)
 echo "=== Installing curl ==="
 apt update
+
+# Configure locales early to suppress perl warnings
+echo "=== Configuring locales ==="
+apt install -y locales
+sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+locale-gen
+update-locale LANG=en_US.UTF-8
+
 apt install -y curl
 
 # Determine editor preference and install (only if no config provided)
