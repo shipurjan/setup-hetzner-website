@@ -284,5 +284,5 @@ rm -f /root/init.sh /root/setup-config.sh /root/default.conf
 unset DEBIAN_FRONTEND
 
 echo "=== Setup complete ==="
-echo "=== Launching zsh ==="
-exec zsh
+echo "=== Launching tmux session: $DOMAIN ==="
+tmux new-session -s "$DOMAIN"
