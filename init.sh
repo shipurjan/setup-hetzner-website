@@ -287,7 +287,12 @@ find "/root/$DOMAIN" -type f -exec sed -i \
   -e "s|{{%INIT_TEMPLATE%:EMAIL}}|$EMAIL|g" \
   -e "s|{{%INIT_TEMPLATE%:ADMIN_LOGIN}}|$ADMIN_LOGIN|g" \
   -e "s|{{%INIT_TEMPLATE%:ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
+  -e "s|{{%INIT_TEMPLATE%:TELEGRAM_BOT_TOKEN}}|${TELEGRAM_BOT_TOKEN:-}|g" \
+  -e "s|{{%INIT_TEMPLATE%:TELEGRAM_CHAT_ID}}|${TELEGRAM_CHAT_ID:-}|g" \
   {} \;
+
+# Make scripts executable
+chmod +x "/root/$DOMAIN/scripts/"*.sh
 
 # Generate bcrypt password hash for Caddy basic_auth
 ADMIN_PASSWORD_HASH=$(mkpasswd -m bcrypt -R 14 "$ADMIN_PASSWORD")
@@ -340,8 +345,19 @@ actionunban = iptables -D f2b-<name> -s <ip> -j REJECT --reject-with icmp-port-u
 name = default
 EOF
 
+# Create fail2ban action for Telegram notifications
+cat >/etc/fail2ban/action.d/telegram.conf <<EOF
+# Telegram notification action for fail2ban
+
+[Definition]
+
+actionban = /root/$DOMAIN/scripts/fail2ban-telegram.sh <name> <ip>
+
+[Init]
+EOF
+
 # Create fail2ban jail configuration
-cat >/etc/fail2ban/jail.local <<'EOF'
+cat >/etc/fail2ban/jail.local <<EOF
 [DEFAULT]
 bantime = 3600
 findtime = 600
@@ -353,12 +369,15 @@ port = ssh
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
+action = iptables[name=SSH, port=ssh, protocol=tcp]
+         telegram
 
 [caddy-honeypot]
 enabled = true
 port = http,https
 filter = caddy-honeypot
 action = docker-iptables[name=caddy-honeypot]
+         telegram
 logpath = /var/log/caddy/access.log
 maxretry = 1
 bantime = 86400

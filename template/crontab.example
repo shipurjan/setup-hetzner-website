@@ -1,0 +1,16 @@
+# Crontab example for vps-webhost-init monitoring
+# To install: crontab -e and add the lines you want
+# Or: (crontab -l 2>/dev/null; cat crontab.example) | crontab -
+
+# Container health check - every 5 minutes
+*/5 * * * * /root/{{%INIT_TEMPLATE%:DOMAIN}}/scripts/health-check.sh
+
+# Security updates check - weekly on Sunday at 9am
+0 9 * * 0 /root/{{%INIT_TEMPLATE%:DOMAIN}}/scripts/security-updates-check.sh
+
+# Disk space check - daily at 8am
+0 8 * * * /root/{{%INIT_TEMPLATE%:DOMAIN}}/scripts/disk-space-check.sh
+
+# Docker cleanup - weekly on Sunday at 3am
+# Removes unused containers, networks, images, and volumes
+0 3 * * 0 docker system prune -af --volumes
