@@ -10,11 +10,11 @@ source .env
 [ -z "$HETZNER_API_TOKEN" ] && echo "Error: HETZNER_API_TOKEN not set" && exit 1
 [ -z "$SSH_KEY" ] && echo "Error: SSH_KEY not set" && exit 1
 
-# Defaults
-SERVER_TYPE=${SERVER_TYPE:-cx23}
-LOCATION=${LOCATION:-nbg1}
-IMAGE=${IMAGE:-debian-13}
-SERVER_NAME=${SERVER_NAME:-vps-webhost-init}
+# Server configuration
+SERVER_TYPE="cx23"       # 2 vCPU, 4GB RAM, 40GB disk
+LOCATION="nbg1"          # Nuremberg, Germany
+IMAGE="debian-13"        # Debian 13
+SERVER_NAME="vps-webhost-init"
 
 # Use command line arg if provided, otherwise use deploy.conf
 USER_CONFIG="${1:-deploy.conf}"
