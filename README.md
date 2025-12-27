@@ -92,9 +92,15 @@ The script will automatically create a Hetzner server, update the config, and ru
 - Template copied to `/root/$DOMAIN/`
 - Git repository initialized with initial commit
 - Docker Compose stack with:
-  - Frontend container (http-server on port 3000)
-  - Caddy reverse proxy (ports 80/443)
-  - Dozzle log viewer (logs.$DOMAIN)
+  - **Frontend**: Minimal Astro with TypeScript and Tailwind CSS
+    - No JavaScript frameworks (add React/Vue/Svelte if needed)
+    - Astro View Transitions for lightweight SPA behavior
+    - Pre-compressed with Brotli/zstd for optimal performance
+  - **Caddy**: Serves static files directly (ports 80/443)
+    - Automatic HTTPS with Let's Encrypt
+    - Brotli/zstd/gzip compression support
+    - Security headers and honeypot protection
+  - **Dozzle**: Log viewer (logs.$DOMAIN)
 - Environment files with bcrypt-hashed credentials
 
 ## Monitoring (Optional)
@@ -157,11 +163,13 @@ After running init.sh, you'll have:
 
 ## Template System
 
-Files use `{{%INIT_TEMPLATE%:VARIABLE}}` placeholders that get replaced with your configuration:
-- `{{%INIT_TEMPLATE%:DOMAIN}}` → Your domain
-- `{{%INIT_TEMPLATE%:EMAIL}}` → Your email
-- `{{%INIT_TEMPLATE%:ADMIN_LOGIN}}` → Admin username
-- `{{%INIT_TEMPLATE%:ADMIN_PASSWORD}}` → Admin password
+Files use `__#TEMPLATE#:VARIABLE__` placeholders that get replaced with your configuration:
+- `__#TEMPLATE#:DOMAIN__` → Your domain
+- `__#TEMPLATE#:EMAIL__` → Your email
+- `__#TEMPLATE#:ADMIN_LOGIN__` → Admin username
+- `__#TEMPLATE#:ADMIN_PASSWORD__` → Admin password
+
+The placeholder format is designed to be compatible with Astro and other modern frontend frameworks.
 
 ## Local Development
 
