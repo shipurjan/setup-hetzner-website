@@ -280,6 +280,7 @@ ADMIN_PASSWORD_HASH=$(mkpasswd -m bcrypt -R 14 "$ADMIN_PASSWORD")
 
 # Create .env file for docker-compose
 cat >"/root/$DOMAIN/docker/.env" <<EOF
+DOMAIN='$DOMAIN'
 LOGS_USERNAME='$ADMIN_LOGIN'
 LOGS_PASSWORD_HASH='$ADMIN_PASSWORD_HASH'
 EOF

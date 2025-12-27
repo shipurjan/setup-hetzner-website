@@ -1,5 +1,9 @@
 FROM node:24.12.0-alpine3.23 AS builder
 
+# Accept DOMAIN as build argument
+ARG DOMAIN
+ENV DOMAIN=$DOMAIN
+
 WORKDIR /app
 
 # Install dependencies
@@ -8,6 +12,7 @@ RUN npm ci
 
 # Copy source and build
 COPY . .
+RUN npx astro telemetry disable
 RUN npm run build
 
 # Output stage - just copy dist to volume

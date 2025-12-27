@@ -141,17 +141,20 @@ __#TEMPLATE#:DOMAIN__ {
 		respond "HONEYPOT TRIGGERED" 403
 	}
 
+	# Serve everything else as static files
+	handle {
+		root * /srv
+		encode zstd gzip
+		try_files {path} {path}/index.html {path}.html
+		file_server
+	}
+
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
 		X-XSS-Protection "1; mode=block"
 		Referrer-Policy strict-origin-when-cross-origin
 	}
-
-	# Serve static files from volume
-	root * /srv
-	file_server
-	try_files {path} /index.html
 }
 
 www.__#TEMPLATE#:DOMAIN__ {

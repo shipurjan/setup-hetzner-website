@@ -16,7 +16,7 @@ source "$SCRIPT_DIR/.env"
 
 # Server configuration
 SERVER_TYPE="cx23"       # 2 vCPU, 4GB RAM, 40GB disk
-LOCATION="nbg1"          # Nuremberg, Germany
+LOCATION="fsn1"          # Falkenstein, Germany
 IMAGE="debian-13"        # Debian 13
 SERVER_NAME="vps-webhost-init"
 
@@ -62,44 +62,52 @@ DOMAIN=$(grep '^DOMAIN=' "$USER_CONFIG" | cut -d= -f2 | tr -d '"')
 if [ "$DOMAIN" != "example.com" ]; then
   echo "Configuring DNS for $DOMAIN..."
 
-  # Get or create zone
+  # Delete existing zone if it exists
   ZONE_ID=$(curl -s -H "Authorization: Bearer $HETZNER_API_TOKEN" https://api.hetzner.cloud/v1/zones | jq -r ".zones[] | select(.name==\"$DOMAIN\") | .id")
-
-  if [ -z "$ZONE_ID" ]; then
-    echo "  Creating DNS zone..."
-    ZONE_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $HETZNER_API_TOKEN" -H "Content-Type: application/json" \
-      -d "{\"name\":\"$DOMAIN\",\"mode\":\"primary\",\"ttl\":3600}" \
-      https://api.hetzner.cloud/v1/zones)
-    ZONE_ID=$(echo "$ZONE_RESPONSE" | jq -r '.zone.id')
+  if [ -n "$ZONE_ID" ]; then
+    echo "  Deleting existing DNS zone..."
+    curl -s -X DELETE -H "Authorization: Bearer $HETZNER_API_TOKEN" https://api.hetzner.cloud/v1/zones/$ZONE_ID
+    sleep 2
   fi
 
-  # Delete existing A and AAAA records for @ and *
-  echo "  Cleaning old DNS records..."
-  for NAME in "@" "*"; do
-    for TYPE in "A" "AAAA"; do
-      curl -s -X DELETE -H "Authorization: Bearer $HETZNER_API_TOKEN" \
-        "https://api.hetzner.cloud/v1/zones/$DOMAIN/rrsets/$NAME/$TYPE" 2>/dev/null || true
-    done
-  done
-
-  # Create new A records (@ and *)
-  echo "  Creating A records..."
-  for NAME in "@" "*"; do
-    curl -s -X POST -H "Authorization: Bearer $HETZNER_API_TOKEN" -H "Content-Type: application/json" \
-      -d "{\"name\":\"$NAME\",\"type\":\"A\",\"ttl\":3600,\"records\":[{\"value\":\"$SERVER_IPV4\"}]}" \
-      "https://api.hetzner.cloud/v1/zones/$DOMAIN/rrsets" >/dev/null
-  done
-
-  # Create new AAAA records (@ and *)
-  echo "  Creating AAAA records..."
-  for NAME in "@" "*"; do
-    curl -s -X POST -H "Authorization: Bearer $HETZNER_API_TOKEN" -H "Content-Type: application/json" \
-      -d "{\"name\":\"$NAME\",\"type\":\"AAAA\",\"ttl\":3600,\"records\":[{\"value\":\"$SERVER_IPV6\"}]}" \
-      "https://api.hetzner.cloud/v1/zones/$DOMAIN/rrsets" >/dev/null
-  done
+  # Create new zone with records
+  echo "  Creating DNS zone with records..."
+  ZONE_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $HETZNER_API_TOKEN" -H "Content-Type: application/json" \
+    -d "{
+      \"name\": \"$DOMAIN\",
+      \"mode\": \"primary\",
+      \"ttl\": 3600,
+      \"rrsets\": [
+        {
+          \"name\": \"@\",
+          \"type\": \"A\",
+          \"ttl\": 3600,
+          \"records\": [{\"value\": \"$SERVER_IPV4\"}]
+        },
+        {
+          \"name\": \"*\",
+          \"type\": \"A\",
+          \"ttl\": 3600,
+          \"records\": [{\"value\": \"$SERVER_IPV4\"}]
+        },
+        {
+          \"name\": \"@\",
+          \"type\": \"AAAA\",
+          \"ttl\": 3600,
+          \"records\": [{\"value\": \"$SERVER_IPV6\"}]
+        },
+        {
+          \"name\": \"*\",
+          \"type\": \"AAAA\",
+          \"ttl\": 3600,
+          \"records\": [{\"value\": \"$SERVER_IPV6\"}]
+        }
+      ]
+    }" \
+    https://api.hetzner.cloud/v1/zones)
 
   echo "  DNS configured: $DOMAIN -> $SERVER_IPV4"
-  TEMP_CONFIG="$USER_CONFIG"
+  TEMP_CONFIG=""
 else
   # Use example.com - set DOMAIN to server IP
   echo "Using example.com - setting DOMAIN to $SERVER_IPV4"
