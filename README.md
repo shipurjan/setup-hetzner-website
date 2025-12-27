@@ -80,6 +80,10 @@ The script will automatically create a Hetzner server, update the config, and ru
 - **Reverse Proxy**: Caddy with automatic HTTPS (Let's Encrypt)
 
 ### Security
+- **SSH Hardening** - Secure remote access configuration
+  - Password authentication disabled (key-only)
+  - Root login with SSH keys only
+  - Configurable custom port to reduce bot spam
 - **fail2ban** - Intrusion prevention with custom honeypot detection
   - SSH brute force protection (3 failed attempts = 1 hour ban)
   - Honeypot traps for common attack paths (/wp-admin, /phpmyadmin, /.env, etc.)
@@ -150,6 +154,7 @@ Default configuration in [default.conf](default.conf):
 - `ADMIN_PASSWORD` - Password for monitoring dashboards
 - `TELEGRAM_BOT_TOKEN` - (Optional) Bot token for monitoring alerts
 - `TELEGRAM_CHAT_ID` - (Optional) Your Telegram chat ID for alerts
+- `SSH_PORT` - SSH port (default: 22, change to reduce bot spam)
 
 ## Infrastructure Created
 

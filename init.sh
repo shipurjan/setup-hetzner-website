@@ -80,6 +80,9 @@ EMAIL="$EMAIL"
 FULL_NAME="$FULL_NAME"
 ADMIN_LOGIN="$ADMIN_LOGIN"
 ADMIN_PASSWORD="$ADMIN_PASSWORD"
+TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
+TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID"
+SSH_PORT="$SSH_PORT"
 EOF
 
 rm -f "$USER_CONFIG_FILE"
@@ -123,6 +126,37 @@ ln -s $(which fdfind) /root/.local/bin/fd
 
 # Suppress detached HEAD advice during pinned checkouts
 git config --global advice.detachedHead false
+
+echo "=== Hardening SSH configuration ==="
+
+# Create SSH hardening config
+cat >/etc/ssh/sshd_config.d/99-hardening.conf <<EOF
+# Disable password authentication (key-only)
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+UsePAM no
+
+# Root login with keys only
+PermitRootLogin prohibit-password
+EOF
+
+# Configure custom SSH port if not default
+if [ "$SSH_PORT" != "22" ]; then
+  echo "Port $SSH_PORT" >/etc/ssh/sshd_config.d/99-custom-port.conf
+  echo "  SSH port changed to $SSH_PORT (remember to use -p $SSH_PORT for future connections)"
+fi
+
+# Test SSH config before restarting
+if ! sshd -t 2>/dev/null; then
+  echo "  ERROR: SSH config test failed, reverting changes"
+  rm -f /etc/ssh/sshd_config.d/99-hardening.conf /etc/ssh/sshd_config.d/99-custom-port.conf
+  exit 1
+fi
+
+# Restart SSH to apply changes
+systemctl restart sshd
+echo "  SSH hardening applied (password auth disabled, key-only)"
 
 echo "=== Installing Docker ==="
 install -m 0755 -d /etc/apt/keyrings
@@ -350,11 +384,11 @@ maxretry = 5
 
 [sshd]
 enabled = true
-port = ssh
+port = $SSH_PORT
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
-action = iptables[name=SSH, port=ssh, protocol=tcp]
+action = iptables[name=SSH, port=$SSH_PORT, protocol=tcp]
          telegram
 
 [caddy-honeypot]
@@ -405,6 +439,33 @@ echo "Containers started. Check status in lazydocker."
 cd /root
 
 echo "=== Setup complete ==="
+
+# Send setup completion notification via Telegram
+if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+  echo "  Sending Telegram notification..."
+
+  MESSAGE="<b>✅ Server Setup Complete - $DOMAIN</b>
+
+Your VPS has been successfully configured with vps-webhost-init.
+
+<b>🔔 Notifications Enabled For:</b>
+• <b>fail2ban</b> - IP bans from honeypot traps and SSH attacks
+• <b>Container Health</b> - Alerts when Docker containers become unhealthy
+• <b>Disk Space</b> - Warnings when disk usage exceeds 80%
+• <b>Security Updates</b> - Weekly notifications about available updates
+
+<b>📦 Services Running:</b>
+• Frontend: https://$DOMAIN
+• Logs: https://logs.$DOMAIN
+
+<b>🔐 SSH Access:</b>
+ssh -p $SSH_PORT root@$DOMAIN"
+
+  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+    -d "chat_id=${TELEGRAM_CHAT_ID}" \
+    -d "parse_mode=HTML" \
+    -d "text=${MESSAGE}" > /dev/null
+fi
 
 # Sanitize domain name for tmux session (only alphanumeric and underscore allowed)
 TMUX_SESSION=$(echo "$DOMAIN" | sed 's/[^a-zA-Z0-9_]/_/g')
