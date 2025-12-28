@@ -19,4 +19,4 @@ RUN npm run build
 FROM alpine:3.23
 WORKDIR /dist
 COPY --from=builder /app/dist ./
-CMD ["tail", "-f", "/dev/null"]
+CMD ["sleep", "infinity"]

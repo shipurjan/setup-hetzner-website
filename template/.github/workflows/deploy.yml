@@ -36,9 +36,21 @@ jobs:
             # Navigate to docker directory
             cd docker
 
-            # Rebuild and restart services (zero downtime, wait for health)
-            echo "Rebuilding and restarting containers..."
-            docker compose up -d --build --wait
+            # Rebuild services
+            echo "Rebuilding services..."
+            docker compose build
 
-            # Show container status
+            # Stop and remove frontend and caddy only (dozzle keeps running)
+            docker compose down frontend caddy
+
+            # Remove frontend volume to force fresh build
+            docker volume rm $(docker volume ls -q | grep frontend_dist) || true
+
+            # Start services fresh
+            docker compose up -d
+
+            # Clean up unused images and containers
+            docker system prune -f
+
+            # Show running containers
             docker compose ps
