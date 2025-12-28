@@ -508,7 +508,8 @@ EOF
   echo ""
   echo "==================================================================="
   echo ""
-  read -p "Press ENTER when you've added both deploy keys to GitHub..."
+  echo "Press ENTER when you've added both deploy keys to GitHub..."
+  read
 
   # Push using RW key
   echo ""
@@ -535,6 +536,16 @@ EOF
     exit 1
   fi
   echo "  ✓ Read-only deploy key working"
+
+  # Push dev branch
+  echo "  Pushing dev branch..."
+  git checkout -b dev
+  if ! git push -u origin dev 2>&1 | tee -a /tmp/git_push.log; then
+    echo "  WARNING: Dev branch push failed"
+  else
+    echo "  ✓ Dev branch pushed"
+  fi
+  git checkout master
 
   # Delete RW key
   rm -f /root/.ssh/${DOMAIN_SANITIZED}_deploy_rw /root/.ssh/${DOMAIN_SANITIZED}_deploy_rw.pub
@@ -568,8 +579,16 @@ EOF
   echo "   (Delete: deploy-rw@$DOMAIN)"
   echo "   (Keep: deploy-ro@$DOMAIN)"
   echo ""
-  echo "2. Add these secrets to your GitHub repository:"
-  echo "   https://github.com/$REPO_PATH/settings/secrets/actions"
+  echo "2. Create GitHub environment 'deploy':"
+  echo "   https://github.com/$REPO_PATH/settings/environments/new"
+  echo "   - Environment name: deploy"
+  echo "   - Deployment branches and tags: Selected branches and tags"
+  echo "   - Add deployment branch rule 1: Branch name 'master'"
+  echo "   - Add deployment branch rule 2: Branch name 'dev'"
+  echo ""
+  echo "3. Add these secrets to the 'deploy' environment:"
+  echo "   https://github.com/$REPO_PATH/settings/environments"
+  echo "   (Click on 'deploy' environment, then add secrets)"
   echo ""
   echo "   VPS_HOST: $DOMAIN"
   echo "   SSH_PORT: $SSH_PORT"
@@ -578,15 +597,17 @@ EOF
   echo ""
   echo "==================================================================="
   echo ""
-  echo "IMPORTANT: Add the secrets above to your GitHub repository now."
+  echo "IMPORTANT: Add the secrets above to the 'deploy' environment now."
   echo "Do NOT store the VPS_SSH_KEY anywhere else - only in GitHub secrets."
   echo ""
-  read -p "Press ENTER after you've added the secrets to GitHub Actions..."
+  echo "Press ENTER after you've completed all steps above..."
+  read
 
   # Delete GHA private key from server
   rm -f /root/.ssh/github_actions_key
   echo ""
   echo "  ✓ Setup complete!"
+  echo "  Repository pushed with master and dev branches."
   echo "  Private key removed from server. Now stored only in GitHub Actions."
   echo "  This is secure and intended - GitHub Actions will use it to deploy."
   echo ""

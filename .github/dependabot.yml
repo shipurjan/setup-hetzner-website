@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Template frontend dependencies
+  - package-ecosystem: npm
+    directory: /template/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Template Docker images
+  - package-ecosystem: docker
+    directory: /template/docker
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # GitHub Actions (root repo workflows)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
