@@ -23,7 +23,7 @@ updates:
 
   # GitHub Actions (template workflows)
   - package-ecosystem: github-actions
-    directory: /template
+    directory: /template/.github/workflows
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
