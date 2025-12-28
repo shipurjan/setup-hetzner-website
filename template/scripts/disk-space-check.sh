@@ -4,8 +4,13 @@
 # Run via cron: 0 8 * * * /root/__#TEMPLATE#:DOMAIN__/scripts/disk-space-check.sh
 
 THRESHOLD=80
-DOMAIN="__#TEMPLATE#:DOMAIN__"
 SCRIPT_DIR="$(dirname "$0")"
+
+# Source DOMAIN from .env
+ENV_FILE="$SCRIPT_DIR/../docker/.env"
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+fi
 
 # Get current disk usage percentage
 USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')

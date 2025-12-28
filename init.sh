@@ -347,6 +347,8 @@ cat >"/root/$DOMAIN/docker/.env" <<EOF
 DOMAIN='$DOMAIN'
 LOGS_USERNAME='$ADMIN_LOGIN'
 LOGS_PASSWORD_HASH='$ADMIN_PASSWORD_HASH'
+TELEGRAM_BOT_TOKEN='$TELEGRAM_BOT_TOKEN'
+TELEGRAM_CHAT_ID='$TELEGRAM_CHAT_ID'
 EOF
 
 echo "=== Configuring fail2ban for honeypot protection ==="

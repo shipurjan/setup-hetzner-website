@@ -4,8 +4,13 @@
 # Run via cron: */5 * * * * /root/__#TEMPLATE#:DOMAIN__/scripts/health-check.sh
 
 STATE_FILE="/tmp/container-health-state"
-DOMAIN="__#TEMPLATE#:DOMAIN__"
 SCRIPT_DIR="$(dirname "$0")"
+
+# Source DOMAIN from .env
+ENV_FILE="$SCRIPT_DIR/../docker/.env"
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+fi
 
 # Get unhealthy containers
 UNHEALTHY=$(docker ps --filter "health=unhealthy" --format "{{.Names}}")

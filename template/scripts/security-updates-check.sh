@@ -3,8 +3,13 @@
 # Sends weekly Telegram notification if security updates are available
 # Run via cron: 0 9 * * 0 /root/__#TEMPLATE#:DOMAIN__/scripts/security-updates-check.sh
 
-DOMAIN="__#TEMPLATE#:DOMAIN__"
 SCRIPT_DIR="$(dirname "$0")"
+
+# Source DOMAIN from .env
+ENV_FILE="$SCRIPT_DIR/../docker/.env"
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+fi
 
 # Check for security updates
 UPDATES=$(apt list --upgradable 2>/dev/null | grep -i security)

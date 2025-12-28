@@ -3,8 +3,16 @@
 # Usage: echo "message" | telegram-notify.sh "Title"
 # Or: telegram-notify.sh "Title" "Message"
 
-BOT_TOKEN="__#TEMPLATE#:TELEGRAM_BOT_TOKEN__"
-CHAT_ID="__#TEMPLATE#:TELEGRAM_CHAT_ID__"
+# Source Telegram credentials from .env
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../docker/.env"
+
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+fi
+
+BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
+CHAT_ID="$TELEGRAM_CHAT_ID"
 
 # Exit if Telegram not configured
 if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
