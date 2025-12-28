@@ -329,7 +329,7 @@ find "/root/$DOMAIN" -type f -exec sed -i \
 # Configure Let's Encrypt staging if requested
 if [ "$STAGING_MODE" = true ]; then
   echo "  Using Let's Encrypt STAGING environment (testing mode)"
-  sed -i 's|{|\{\n\tacme_ca https://acme-staging-v02.api.letsencrypt.org/directory|' "/root/$DOMAIN/docker/caddy/Caddyfile"
+  sed -i '1 a\	acme_ca https://acme-staging-v02.api.letsencrypt.org/directory' "/root/$DOMAIN/docker/caddy/Caddyfile"
 fi
 
 # Make scripts executable
