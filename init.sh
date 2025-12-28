@@ -452,7 +452,7 @@ cd "/root/$DOMAIN"
 git config --global core.pager ''
 git init -b master
 git add .
-git -c user.email='<>' -c user.name='vps-webhost-init' commit -m "init"
+git -c user.email='<>' -c user.name='vps-webhost-init' commit -m "init [skip ci]"
 
 # Set git identity for future commits
 git config --global user.email "$EMAIL"
