@@ -11,6 +11,7 @@ jobs:
   check:
     name: Type Check and Build
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
 
     steps:
       - name: Checkout code
