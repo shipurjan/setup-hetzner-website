@@ -5,7 +5,7 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 # Script version
-VERSION="0.0.2"
+VERSION="0.0.3"
 
 # Pinned versions
 OHMYZSH_COMMIT="92aed2e93624124182ba977a91efa5bbe1e76d5f"
