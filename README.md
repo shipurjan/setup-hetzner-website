@@ -8,7 +8,7 @@ One command to provision a production-ready VPS with Docker, auto-HTTPS, fail2ba
 
 ## What You Get
 
-<img src="assets/lighthouse.png" alt="Deployed site with 100 Lighthouse scores" width="600">
+<img src="assets/lighthouse.png" alt="Deployed site with 100 Lighthouse scores">
 
 The script creates a complete GitHub repo for your domain with a Dockerized web stack, CI/CD pipelines, and a starter Astro site optimized for 100 Lighthouse scores across Performance, Accessibility, Best Practices, and SEO.
 
